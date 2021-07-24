@@ -1,0 +1,2 @@
+# Genshin Discord Bot
+ 
