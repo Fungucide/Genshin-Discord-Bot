@@ -24,7 +24,7 @@ class GenshinCog(commands.Cog):
         self.bot = bot
 
     @command(name='stats', aliases=['s'], help='Fetches general stats about a player')
-    async def stats_command(self, ctx, *args:list):
+    async def stats_command(self, ctx, *args:str):
         uid, args = await _identify(ctx, args)
         info = await get_info(ctx, uid)
         if not info:
@@ -33,7 +33,7 @@ class GenshinCog(commands.Cog):
 
     @command(name='characters', aliases=['character', 'c'],
              help='Fetches all the players characters or specific information about certain characters')
-    async def characters_command(self, ctx, *args:list):
+    async def characters_command(self, ctx, *args:str):
         uid, args = await _identify(ctx, args)
         if not uid:
             await ctx.send(f'No user found')
@@ -52,7 +52,8 @@ class GenshinCog(commands.Cog):
             characters = genshin_data.get_player_character(uid, args)
             for character in args:
                 if character.title() in characters:
-                    await ctx.send(embed=create_player_character_embed(ctx, nick, characters[character]))
+                    for embed in create_player_character_embeds(ctx, nick, characters[character]):
+                        await ctx.send(embed=embed)
 
     @command(name='search', aliases=['uid'], help='Searches for a player based on their community UID')
     async def search_command(self, ctx, name: str):
@@ -138,41 +139,67 @@ def create_characters_embed(ctx, info: Dict[str, any]):
     field_footer(ctx, character_embed)
     return character_embed
 
+def create_weapon_embed(ctx, weapon: Dict[str, any]):
+    weapon_embed = discord.Embed(title=f'__Weapon:__ {weapon["name"]}',
+                                     value=f':star:' * weapon['rarity'] + '\n'
+                                           + f'**Level:** {weapon["level"]}\n'
+                                           + f'**Ascension:** {weapon["ascension"]}\n'
+                                           + f'**Refinement:** {weapon["refinement"]}')
+    weapon_embed.set_thumbnail(url=weapon['icon'])
 
-def create_player_character_embed(ctx, nick: str, character: Dict[str, any]):
+    field_footer(ctx, weapon_embed)
+
+    return weapon_embed
+
+def create_artifacts_embed(ctx, artifacts: List[Dict[str, any]], set_count: Dict[str, int], set_effect: Dict[str, str]):
+
+    artifact_embed = discord.Embed(title=f'{separate_line}\nArtifacts',
+                                     value=f'**{separate_line}**')
+
+    for artifact in artifacts:
+        set_name = artifact['set']['name']
+        if set_name not in set_count:
+            set_count[set_name] = 0
+            set_effect[set_name] = artifact['set']['effects']
+        set_count[set_name] += 1
+        artifact_embed.add_field(name=f'__{artifact["pos_name"].title()}:__ {artifact["name"]}',
+                                         value=f':star:' * artifact['rarity'] + '\n'
+                                               + f'**Set:** {set_name}\n'
+                                               + f'**Level:** {artifact["level"]}', inline=True)
+
+    artifact_embed.add_field(name=f'{separate_line}\nArtifact Set Bonus',
+                                     value=f'**{separate_line}**', inline=False)
+    for set_name in set_count:
+        for effect in set_effect[set_name]:
+            if set_count[set_name] >= effect['pieces']:
+                artifact_embed.add_field(name=f'__{effect["pieces"]}-Piece Set:__ {set_name}',
+                                                 value=effect['effect'], inline=True)
+
+    field_footer(ctx, artifact_embed)
+    return artifact_embed
+    
+
+def create_character_embed(ctx, nick: str, character: Dict[str, any]):
     player_character_embed = discord.Embed(title=f'{nick}\'s {character["name"]}',
                                            description=':star:' * character['rarity'] + '\n'
                                                        + f'**Level**: {character["level"]}\n'
                                                        + f'**Friendship**: {character["friendship"]}\n'
                                                        + f'**Constellation**: {character["constellation"]}')
     player_character_embed.set_thumbnail(url=character['icon'])
-    weapon = character['weapon']
-    player_character_embed.add_field(name=f'__Weapon:__ {weapon["name"]}',
-                                     value=f':star:' * weapon['rarity'] + '\n'
-                                           + f'**Level:** {weapon["level"]}\n'
-                                           + f'**Ascension:** {weapon["ascension"]}\n'
-                                           + f'**Refinement:** {weapon["refinement"]}', inline=False)
+
+    field_footer(ctx, player_character_embed)
+    return player_character_embed
+
+def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
+    
+    embeds = []
+
+    embeds.append(create_character_embed(ctx, nick, character))
+    embeds.append(create_weapon_embed(ctx, character['weapon']))
 
     set_count = {}
     set_effect = {}
-    player_character_embed.add_field(name=f'{separate_line}\nArtifacts',
-                                     value=f'**{separate_line}**', inline=False)
-    for artifact in character['artifacts']:
-        set_name = artifact['set']['name']
-        if set_name not in set_count:
-            set_count[set_name] = 0
-            set_effect[set_name] = artifact['set']['effects']
-        set_count[set_name] += 1
-        player_character_embed.add_field(name=f'__{artifact["pos_name"].title()}:__ {artifact["name"]}',
-                                         value=f':star:' * artifact['rarity'] + '\n'
-                                               + f'**Set:** {set_name}\n'
-                                               + f'**Level:** {artifact["level"]}', inline=True)
-    player_character_embed.add_field(name=f'{separate_line}\nArtifact Set Bonus',
-                                     value=f'**{separate_line}**', inline=False)
-    for set_name in set_count:
-        for effect in set_effect[set_name]:
-            if set_count[set_name] >= effect['pieces']:
-                player_character_embed.add_field(name=f'__{effect["pieces"]}-Piece Set:__ {set_name}',
-                                                 value=effect['effect'], inline=True)
-    field_footer(ctx, player_character_embed)
-    return player_character_embed
+
+    embeds.append(ctx, character['artifacts'], set_count, set_effect)
+
+    return embeds
