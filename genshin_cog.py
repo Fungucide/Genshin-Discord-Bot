@@ -200,6 +200,6 @@ def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
     set_count = {}
     set_effect = {}
 
-    embeds.append(ctx, character['artifacts'], set_count, set_effect)
+    embeds.append(create_artifacts_embed(ctx, character['artifacts'], set_count, set_effect))
 
     return embeds
