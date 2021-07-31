@@ -141,13 +141,11 @@ def create_characters_embed(ctx, info: Dict[str, any]):
 
 def create_weapon_embed(ctx, weapon: Dict[str, any]):
     weapon_embed = discord.Embed(title=f'__Weapon:__ {weapon["name"]}',
-                                     value=f':star:' * weapon['rarity'] + '\n'
+                                     description=f':star:' * weapon['rarity'] + '\n'
                                            + f'**Level:** {weapon["level"]}\n'
                                            + f'**Ascension:** {weapon["ascension"]}\n'
                                            + f'**Refinement:** {weapon["refinement"]}')
     weapon_embed.set_thumbnail(url=weapon['icon'])
-
-    field_footer(ctx, weapon_embed)
 
     return weapon_embed
 
@@ -175,7 +173,6 @@ def create_artifacts_embed(ctx, artifacts: List[Dict[str, any]], set_count: Dict
                 artifact_embed.add_field(name=f'__{effect["pieces"]}-Piece Set:__ {set_name}',
                                                  value=effect['effect'], inline=True)
 
-    field_footer(ctx, artifact_embed)
     return artifact_embed
     
 
@@ -187,7 +184,6 @@ def create_character_embed(ctx, nick: str, character: Dict[str, any]):
                                                        + f'**Constellation**: {character["constellation"]}')
     player_character_embed.set_thumbnail(url=character['icon'])
 
-    field_footer(ctx, player_character_embed)
     return player_character_embed
 
 def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
@@ -201,5 +197,7 @@ def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
     set_effect = {}
 
     embeds.append(create_artifacts_embed(ctx, character['artifacts'], set_count, set_effect))
+
+    field_footer(ctx, embeds[-1])
 
     return embeds
