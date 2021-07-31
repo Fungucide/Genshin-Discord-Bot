@@ -71,7 +71,7 @@ async def _identify(ctx, args: list):
     else:
         res = genshin_data.search(args[0])
         if not res:
-            return None
+            return None, None
         if len(res) > 1:
             await ctx.send(
                 f'Found {len(res)} users matching name {args[0]}\n '
