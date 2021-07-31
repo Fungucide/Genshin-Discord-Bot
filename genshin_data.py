@@ -33,7 +33,7 @@ class GenshinData:
         if not record_card:
             return None
         genshin_uid = record_card['game_role_id']
-        genshin_info = gs.get_user_info(genshin_uid)
+        genshin_info = gs.get_user_stats(genshin_uid)
         if not genshin_info:
             return None
 
@@ -63,7 +63,7 @@ class GenshinData:
         return full_data
 
     def get_player_character(self, uid: int, names: List[str]):
-        characters = gs.get_all_characters(uid)
+        characters = gs.get_characters(uid)
         res = {}
         for character in characters:
             if character['name'] in names or character['alt_name'] in names:
