@@ -58,7 +58,20 @@ class GenshinCog(commands.Cog):
     @command(name='search', aliases=['uid'], help='Searches for a player based on their community UID')
     async def search_command(self, ctx, name: str):
         result = genshin_data.search(name)
-        await ctx.send(str(result))
+        if result:
+            for user in result:
+                embed = create_profile_card(ctx,user)
+                await ctx.send(embed=embed)
+
+
+def create_profile_card(ctx, info: Dict[str, any]):
+    embed = discord.Embed(title=f'{info["nickname"]}\'s Mihoyo Lab Profile')
+    if info["introduce"]:
+        embed.add_field(name="Introduction", value=info["introduce"], inline=False)
+    embed.add_field(name="Link", value=f'https://www.hoyolab.com/genshin/accountCenter/postList?id={info["uid"]}', inline=False)
+    field_helper(['UID'], True, embed, info)
+    embed.set_thumbnail(url=info["avatar_url"])
+    return embed
 
 
 async def _identify(ctx, args: list):
@@ -123,7 +136,6 @@ def create_stats_embed(ctx, info: Dict[str, any]):
 
 def create_characters_embed(ctx, info: Dict[str, any]):
     # Pray this never goes over the character limit
-
     character_embed = discord.Embed(title=f'{info["nickname"]}\'s Characters')
     characters = info['characters']
     for character in characters:

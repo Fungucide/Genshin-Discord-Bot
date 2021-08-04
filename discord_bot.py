@@ -1,4 +1,5 @@
 import datetime
+from logging import ERROR
 import os
 
 import discord
@@ -10,7 +11,7 @@ from genshin_cog import GenshinCog
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-
+ERROR_CHANNEL_ID = int(os.getenv('DISCORD_BASE_ERROR_CHANNEL'))
 bot = commands.Bot(command_prefix='!')
 
 
@@ -20,11 +21,13 @@ async def on_ready():
     print(f'{bot.user.name} has connected {datetime.datetime.now()}.')
 
 
-'''
+
+
 @bot.event
 async def on_command_error(ctx, error):
-    print(error)
-'''
+    error_channel = bot.get_channel(ERROR_CHANNEL_ID)
+    await error_channel.send(error)
+
 
 
 @bot.after_invoke
