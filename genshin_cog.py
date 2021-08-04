@@ -149,31 +149,38 @@ def create_weapon_embed(ctx, weapon: Dict[str, any]):
 
     return weapon_embed
 
-def create_artifacts_embed(ctx, artifacts: List[Dict[str, any]], set_count: Dict[str, int], set_effect: Dict[str, str]):
+def create_artifacts_embeds(ctx, artifacts: List[Dict[str, any]], set_count: Dict[str, int], set_effect: Dict[str, str]):
 
-    artifact_embed = discord.Embed(title=f'{separate_line}\nArtifacts',
-                                     value=f'**{separate_line}**')
+    artifact_embeds = []
 
+    artifact_title_embed = discord.Embed(title=f'__Artifacts__')
+    artifact_embeds.append(artifact_title_embed)
+
+    # individual artifacts
     for artifact in artifacts:
         set_name = artifact['set']['name']
         if set_name not in set_count:
             set_count[set_name] = 0
             set_effect[set_name] = artifact['set']['effects']
         set_count[set_name] += 1
-        artifact_embed.add_field(name=f'__{artifact["pos_name"].title()}:__ {artifact["name"]}',
-                                         value=f':star:' * artifact['rarity'] + '\n'
+        current_artifact_embed = discord.Embed(title=f'__{artifact["pos_name"].title()}:__ {artifact["name"]}',
+                                         description=f':star:' * artifact['rarity'] + '\n'
                                                + f'**Set:** {set_name}\n'
-                                               + f'**Level:** {artifact["level"]}', inline=True)
+                                               + f'**Level:** {artifact["level"]}')
+        current_artifact_embed.set_thumbnail(url=artifact['icon'])
+        artifact_embeds.append(current_artifact_embed)
 
-    artifact_embed.add_field(name=f'{separate_line}\nArtifact Set Bonus',
-                                     value=f'**{separate_line}**', inline=False)
+    # artifact sets
+    artifact_set_embed = discord.Embed(title=f'Artifact Set Bonus',
+                                     description=f'**{separate_line}**')
     for set_name in set_count:
         for effect in set_effect[set_name]:
             if set_count[set_name] >= effect['pieces']:
-                artifact_embed.add_field(name=f'__{effect["pieces"]}-Piece Set:__ {set_name}',
+                artifact_set_embed.add_field(name=f'__{effect["pieces"]}-Piece Set:__ {set_name}',
                                                  value=effect['effect'], inline=True)
+    artifact_embeds.append(artifact_set_embed)
 
-    return artifact_embed
+    return artifact_embeds
     
 
 def create_character_embed(ctx, nick: str, character: Dict[str, any]):
@@ -196,7 +203,7 @@ def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
     set_count = {}
     set_effect = {}
 
-    embeds.append(create_artifacts_embed(ctx, character['artifacts'], set_count, set_effect))
+    embeds += create_artifacts_embeds(ctx, character['artifacts'], set_count, set_effect)
 
     field_footer(ctx, embeds[-1])
 
