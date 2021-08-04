@@ -25,8 +25,9 @@ def get_character_list():
     if 200 < res.status_code or res.status_code >= 300:
         raise Exception(f"Request for character list returned with response code:{res.status_code}\n{res.text}")
         return None
-    list = res.json()
-    list[list.index('traveler-anemo')] = 'traveler'
+    characters = res.json()
+    characters[characters.index('traveler-anemo')] = 'traveler'
+    return characters
 
 
 def get_element_icon(element: str):
