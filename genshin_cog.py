@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 import util
 from genshin_data import GenshinData
+from genshin_dev_data import GenshinDevData, InvalidCharacterException
+from requests import RequestException
 
 load_dotenv()
 GENSHIN_UID = int(os.getenv('GENSHIN_UID'))
@@ -62,6 +64,22 @@ class GenshinCog(commands.Cog):
             for user in result:
                 embed = create_profile_card(ctx,user)
                 await ctx.send(embed=embed)
+
+    @command(name='talents', aliases=['t'], help='Gets talent info associated with a character')
+    async def talents_command(self, ctx, character: str):
+        character = character.lower()
+
+        talent_materials = None
+        try:
+            talent_materials = GenshinDevData.get_character_talent_materials(character)
+        except InvalidCharacterException:
+            await ctx.send(content=f'Unable to get complete talent info for character {character}')
+            return
+        except RequestException as e:
+            await ctx.send(content=f'Error requesting talent data for character {character}: {str(e)}')
+            return
+
+        await ctx.send(embed = create_talents_embed(ctx, character, talent_materials))
 
 
 def create_profile_card(ctx, info: Dict[str, any]):
@@ -220,3 +238,46 @@ def create_player_character_embeds(ctx, nick: str, character: Dict[str, any]):
     field_footer(ctx, embeds[-1])
 
     return embeds
+
+# Assumes that in consecutive level intervals, the rarities of the required materials are consecutive
+def create_talents_embed(ctx, character: str, talent_materials: Dict[str, any]):
+    level_amts = {
+        'talent-book': [(0, 0), (2, 3), (3, 2), (3, 4), (3, 6), (3, 9), (4, 4), (4, 6), (4, 12), (4, 16)],
+        'boss-material': [(0, 0)] * 6 + [(5, 1), (5, 1), (5, 2), (5, 2)],
+        'common-ascension-material': [(0, 0), (1, 6), (2, 3), (2, 4), (2, 6), (2, 9), (3, 4), (3, 6), (3, 9), (3, 12)],
+        'crown': [(0, 0)] * 9 + [(5, 1)],
+    }
+
+    level_intervals = [(1, 2), (2, 6), (6, 10)]
+
+    talents_embed = discord.Embed(title=f'Required talent materials for {character.capitalize()}:')
+    
+    for material_type in ['talent-book', 'boss-material', 'common-ascension-material', 'crown']:
+        material_type_header = material_type.replace('-', ' ').capitalize()
+        talents_embed.add_field(name=f'{separate_line}\n{material_type_header}',
+            value=f'**{separate_line}**', inline = False)
+
+        material_rarities = talent_materials[material_type]
+
+        rarity_idx = 0
+        for level_interval in level_intervals:
+            start_level = level_interval[0]
+            end_level = level_interval[1]
+            required_amts = util.calculate_required_materials(start_level - 1, end_level - 1, level_amts[material_type])
+
+            for rarity, amt in required_amts:
+                if amt != 0:
+                    material_rarity = material_rarities[rarity_idx]
+                    talents_embed.add_field(
+                        name=f'__{material_rarity["name"]}__:',
+                        value=f':star:' * rarity + '\n'
+                                + f'**Amount:** {amt}\n'
+                                + f'**Levels:** {start_level} - {end_level}\n',
+                        inline=True,
+                    )
+
+                    rarity_idx += 1
+
+    field_footer(ctx, talents_embed)
+
+    return talents_embed
