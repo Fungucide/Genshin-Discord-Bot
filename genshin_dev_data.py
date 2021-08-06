@@ -43,14 +43,14 @@ class GenshinDevData:
         books = GenshinDevData.send_request(session, 'get', '/materials/talent-book')
 
         for book, info in books.items():
-            if character in info['characters']:
+            if 'characters' in info and character in info['characters']:
                 ret['talent-book'] = info['items']
                 break
 
         # get boss material
         boss_materials = GenshinDevData.send_request(session, 'get', '/materials/talent-boss')
         for material, info in boss_materials.items():
-            if character in info['characters']:
+            if 'characters' in info and character in info['characters']:
                 ret['boss-material'] = [{
                     'name': info['name'],
                     'rarity': 5,
@@ -60,7 +60,7 @@ class GenshinDevData:
         # get common ascension material
         common_materials = GenshinDevData.send_request(session, 'get', '/materials/common-ascension')
         for material, info in common_materials.items():
-            if character in info['characters']:
+            if 'characters' in info and character in info['characters']:
                 ret['common-ascension-material'] = info['items']
                 break
 

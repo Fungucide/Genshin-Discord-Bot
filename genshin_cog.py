@@ -73,10 +73,10 @@ class GenshinCog(commands.Cog):
         try:
             talent_materials = GenshinDevData.get_character_talent_materials(character)
         except InvalidCharacterException:
-            await ctx.send(content=f'Unable to get complete talent info for character {character}')
+            await ctx.send(content=f'Unable to get complete talent info for character {character.capitalize()}')
             return
         except RequestException as e:
-            await ctx.send(content=f'Error requesting talent data for character {character}: {str(e)}')
+            await ctx.send(content=f'Error requesting talent data for character {character.capitalize()}: {str(e)}')
             return
 
         await ctx.send(embed = create_talents_embed(ctx, character, talent_materials))
