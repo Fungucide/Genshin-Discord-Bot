@@ -81,6 +81,20 @@ class GenshinCog(commands.Cog):
 
         await ctx.send(embed = create_talents_embed(ctx, character, talent_materials))
 
+    @command(name='abyss', aliases=['a'], help='Gets current spiral abyss information for a player')
+    async def abyss_command(self, ctx, *args: str):
+        uid, args = await _identify(ctx, args)
+
+        if not uid:
+            await ctx.send(f'No user found')
+            return
+
+        info = await get_info(ctx, uid)
+        if not info:
+            return
+
+        await ctx.send(embed=create_spiral_abyss_embed(ctx, info['uid'], info['nickname']))
+
 
 def create_profile_card(ctx, info: Dict[str, any]):
     embed = discord.Embed(title=f'{info["nickname"]}\'s Mihoyo Lab Profile')
@@ -142,6 +156,14 @@ def field_helper(names: Union[List[str], str], inline: bool, embed: discord.Embe
 def field_footer(ctx, embed: discord.Embed):
     embed.set_footer(text=f'Requested by {ctx.author.display_name}')
 
+def get_emoji(character: str):
+    emoji = util.db.get_emoji(character)
+    if emoji:
+        emoji = emoji["discord_id"]
+    else:
+        emoji = ''
+
+    return emoji
 
 def create_stats_embed(ctx, info: Dict[str, any]):
     stats_embed = discord.Embed(title=f'{info["nickname"]}\'s Stats')
@@ -157,11 +179,7 @@ def create_characters_embed(ctx, info: Dict[str, any]):
     character_embed = discord.Embed(title=f'{info["nickname"]}\'s Characters')
     characters = info['characters']
     for character in characters:
-        emoji = util.db.get_emoji(character['name'].lower())
-        if emoji:
-            emoji = emoji["discord_id"]
-        else:
-            emoji = ''
+        emoji = get_emoji(character['name'].lower())
         value = ':star:' * character['rarity'] \
                 + '\n' + f'**Level**: {character["level"]}'.ljust(15) \
                 + '\n' + f'**Friendship**: {character["friendship"]}'.rjust(16)
@@ -281,3 +299,60 @@ def create_talents_embed(ctx, character: str, talent_materials: Dict[str, any]):
     field_footer(ctx, talents_embed)
 
     return talents_embed
+
+def create_spiral_abyss_embed(ctx, uid: int, player_name: str):
+    abyss_data = genshin_data.get_spiral_abyss(uid)
+
+    abyss_embed = discord.Embed(
+        title=f'Spiral Abyss season {abyss_data["season"]} info for {player_name}' + 
+        f'\n{separate_line}',
+        description=f'**Start Time:** {abyss_data["season_start_time"]}\n' + 
+        f'**End Time:** {abyss_data["season_end_time"]}\n',
+    )
+
+    stats_str = ''
+    for stat, value in abyss_data['stats'].items():
+        stat_name = stat.replace('_', ' ').capitalize()
+        stats_str += f'**{stat_name}:** {value}'
+        if 'star' in stat:
+            stats_str += ':star:'
+        stats_str += '\n'
+
+    for rank, characters in abyss_data['character_ranks'].items():
+        if len(characters) == 0:
+            break
+
+        rank_name = rank.replace('_', ' ').capitalize()
+        emoji = get_emoji(characters[0]['name'].lower())
+        
+        stats_str += f'{emoji} **{rank_name}:** {characters[0]["value"]}\n'
+
+    abyss_embed.add_field(
+        name=f'{separate_line}\nStats\n{separate_line}',
+        value=stats_str,
+        inline=False,
+    )
+
+    for floor in abyss_data['floors']:
+        floor_str = ''
+
+        for chamber in floor['chambers']:
+            floor_str += f'**Chamber {chamber["chamber"]}**: '
+
+            first_half, second_half = chamber['battles']
+            first_half_emojis = [get_emoji(char['name'].lower()) for char in first_half['characters']]
+            second_half_emojis = [get_emoji(char['name'].lower()) for char in second_half['characters']]
+
+            floor_str += ' '.join(first_half_emojis) + ' '
+            floor_str += ':star:' * chamber['max_stars'] + ' '
+            floor_str += ' '.join(second_half_emojis)
+
+            floor_str += '\n'
+
+        abyss_embed.add_field(
+            name=f'{separate_line}\nFloor {floor["floor"]}\n{separate_line}',
+            value=floor_str,
+            inline=False,
+        )
+
+    return abyss_embed
