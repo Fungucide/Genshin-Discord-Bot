@@ -3,7 +3,6 @@ from typing import List
 
 import genshinstats as gs
 
-
 class GenshinData:
     # TODO: Cache data and implement rate limiting
     # TODO: Do something to get profile icon?
@@ -71,3 +70,4 @@ class GenshinData:
                 if character['alt_name']:
                     res[character['alt_name']] = character
         return res
+        

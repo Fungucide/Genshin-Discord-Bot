@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Tuple
 
 import requests
 from PIL import Image
@@ -69,3 +69,24 @@ def download_images(url: str, name: str, category: str):
         os.makedirs(dest_folder)
     get_image(url, dest_name)
     return convert_img(dest_name, dest_final)
+
+"""
+amts_per_level: a list containing tuples, each in form (rarity, amount)
+requires: rarities in amts_per_level are in non-decreasing order
+returns: a list containing tuples, each in form (rarity, amount)
+"""
+def calculate_required_materials(current_level: int, desired_level: int, 
+    amts_per_level: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    
+    ret = []
+
+    for i in range(current_level + 1, desired_level + 1):
+        level_rarity = amts_per_level[i][0]
+        level_amt = amts_per_level[i][1]
+
+        if len(ret) == 0 or level_rarity != ret[-1][0]:
+            ret.append((level_rarity, 0))
+
+        ret[-1] = (ret[-1][0], ret[-1][1] + level_amt)
+
+    return ret
