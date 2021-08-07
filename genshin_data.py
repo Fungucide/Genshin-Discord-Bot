@@ -70,4 +70,7 @@ class GenshinData:
                 if character['alt_name']:
                     res[character['alt_name']] = character
         return res
+
+    def get_spiral_abyss(self, uid: int):
+        return gs.get_spiral_abyss(uid)
         
